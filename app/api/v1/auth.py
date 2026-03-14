@@ -17,10 +17,14 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="email already registered")
 
+    has_admin = db.query(User.id).filter(User.role == "admin").first() is not None
+    assigned_role = "user" if has_admin else "admin"
+
     user = User(
         username=payload.username,
         email=payload.email,
         hashed_pw=hash_password(payload.password),
+        role=assigned_role,
     )
     db.add(user)
     db.commit()

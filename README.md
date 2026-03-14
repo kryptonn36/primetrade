@@ -57,42 +57,36 @@ Open:
 
 - Frontend UI → http://localhost:8000
 - Swagger docs → http://localhost:8000/api/docs
-- ReDoc → http://localhost:8000/api/redoc
 
 ## API Overview
 
-### Auth `/api/v1/auth`
+After login, send your token as `Authorization: Bearer <token>`.
 
-| Method | Path        | Description     | Auth |
-|--------|-------------|-----------------|------|
-| POST   | `/register` | create account  | no   |
-| POST   | `/login`    | get JWT token   | no   |
+- Auth (`/api/v1/auth`)
+	- `POST /register` — create a new account
+	- `POST /login` — get an access token
 
-### Tasks `/api/v1/tasks`
+- Tasks (`/api/v1/tasks`) — login required
+	- `GET /` — list your tasks
+	- `POST /` — create a task
+	- `GET /{id}` — get one of your tasks
+	- `PATCH /{id}` — update a task
+	- `DELETE /{id}` — delete a task
 
-| Method | Path    | Description    | Auth |
-|--------|---------|----------------|------|
-| GET    | `/`     | list my tasks  | yes  |
-| POST   | `/`     | create task    | yes  |
-| GET    | `/{id}` | get one task   | yes  |
-| PATCH  | `/{id}` | update task    | yes  |
-| DELETE | `/{id}` | delete task    | yes  |
+- Users (`/api/v1/users`) — login required
+	- `GET /me` — view your profile
+	- `POST /me/change-password` — change your password
 
-### Users `/api/v1/users`
+- Admin (`/api/v1/admin`) — admin only
+	- `GET /users` — list all users
+	- `PATCH /users/{id}/deactivate` — deactivate a user
+	- `PATCH /users/{id}/promote` — promote a user to admin
+	- `GET /tasks` — list all tasks
 
-| Method | Path                  | Description     | Auth |
-|--------|-----------------------|-----------------|------|
-| GET    | `/me`                 | my profile      | yes  |
-| POST   | `/me/change-password` | change password | yes  |
+### Admin bootstrap
 
-### Admin `/api/v1/admin`
-
-| Method | Path                     | Description       | Auth       |
-|--------|--------------------------|-------------------|------------|
-| GET    | `/users`                 | list all users    | admin only |
-| PATCH  | `/users/{id}/deactivate` | deactivate user   | admin only |
-| PATCH  | `/users/{id}/promote`    | promote to admin  | admin only |
-| GET    | `/tasks`                 | list all tasks    | admin only |
+In a fresh database, the **first registered account** is automatically assigned the `admin` role.
+All subsequent registrations are assigned the `user` role by default.
 
 ## Database
 
