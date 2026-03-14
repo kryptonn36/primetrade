@@ -5,7 +5,7 @@ A scalable REST API with JWT authentication and role-based access control, built
 ## Stack
 
 - **FastAPI** — API framework with auto-generated Swagger docs
-- **SQLAlchemy** — ORM (SQLite for dev, Postgres for prod)
+- **SQLAlchemy** — ORM (Postgres)
 - **Pydantic v2** — request validation and response schemas
 - **passlib[bcrypt]** — password hashing
 - **PyJWT** — JWT token generation and verification

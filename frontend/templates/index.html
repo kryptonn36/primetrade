@@ -81,6 +81,22 @@
     .form-group textarea:focus { border-color: #999; }
     .form-group textarea { resize: vertical; min-height: 80px; }
 
+    .toggle-password {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: #555;
+      margin-top: -0.35rem;
+      margin-bottom: 0.9rem;
+      user-select: none;
+    }
+    .toggle-password input {
+      width: auto;
+      margin: 0;
+      padding: 0;
+    }
+
     .btn {
       width: 100%;
       padding: 9px;
@@ -193,6 +209,48 @@
       font-size: 0.9rem;
     }
 
+    .admin-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      margin-top: 1rem;
+    }
+    .admin-subtitle {
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .admin-list {
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      min-height: 80px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .admin-item {
+      padding: 0.75rem;
+      border-bottom: 1px solid #f1f1f1;
+    }
+    .admin-item:last-child { border-bottom: none; }
+    .admin-item-title {
+      font-size: 0.88rem;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .admin-item-meta {
+      font-size: 0.8rem;
+      color: #666;
+    }
+    .admin-item-actions {
+      margin-top: 0.5rem;
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
     #loading { display: none; text-align: center; padding: 2rem; color: #999; font-size: 0.9rem; }
   </style>
 </head>
@@ -224,6 +282,10 @@
         <label>password</label>
         <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" />
       </div>
+      <label class="toggle-password">
+        <input id="login-show-password" type="checkbox" />
+        show password
+      </label>
       <button class="btn" id="btn-login">sign in</button>
     </div>
 
@@ -241,6 +303,10 @@
         <label>password</label>
         <input id="reg-password" type="password" placeholder="min 8 characters" />
       </div>
+      <label class="toggle-password">
+        <input id="reg-show-password" type="checkbox" />
+        show password
+      </label>
       <button class="btn" id="btn-register">create account</button>
     </div>
   </div>
@@ -250,10 +316,10 @@
 <div id="page-dashboard" class="page">
   <div class="dashboard-wrap">
     <div class="dashboard-header">
-      <h2>my tasks</h2>
+      <h2 id="dashboard-title">my tasks</h2>
     </div>
 
-    <div class="task-form-card">
+    <div id="user-task-form" class="task-form-card">
       <h3>new task</h3>
       <div id="task-create-msg" class="msg"></div>
       <div class="form-group">
@@ -279,7 +345,7 @@
       </div>
     </div>
 
-    <div class="filter-row">
+    <div id="user-filter-row" class="filter-row">
       <button class="filter-btn active" data-filter="all">all</button>
       <button class="filter-btn" data-filter="todo">todo</button>
       <button class="filter-btn" data-filter="in_progress">in progress</button>
@@ -288,6 +354,27 @@
 
     <div id="loading">loading...</div>
     <div id="task-list" class="task-list"></div>
+
+    <div id="admin-panel" class="task-form-card" style="display:none; margin-top:1.5rem;">
+      <h3>admin</h3>
+      <div id="admin-msg" class="msg"></div>
+      <div class="form-actions" style="margin-top:0; margin-bottom:1rem;">
+        <button class="btn btn-sm" id="btn-admin-refresh-users">refresh users</button>
+        <button class="btn btn-sm btn-ghost" id="btn-admin-refresh-tasks">refresh all tasks</button>
+      </div>
+
+      <div class="admin-grid">
+        <div>
+          <h4 class="admin-subtitle">users</h4>
+          <div id="admin-users" class="admin-list"></div>
+        </div>
+
+        <div>
+          <h4 class="admin-subtitle">all tasks</h4>
+          <div id="admin-tasks" class="admin-list"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

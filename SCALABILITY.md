@@ -2,7 +2,7 @@
 
 ## Current architecture
 
-Single-process FastAPI app with SQLite. Fine for development and small deployments.
+Single-process FastAPI app with Postgresql. Fine for development and small deployments.
 The structure is set up so none of the following changes require rewriting existing code.
 
 ## Database

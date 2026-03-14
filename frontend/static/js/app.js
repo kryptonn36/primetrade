@@ -2,6 +2,7 @@ const API = "/api/v1";
 
 let token = localStorage.getItem("token") || null;
 let currentFilter = "all";
+let currentUser = null;
 
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -100,9 +101,11 @@ async function registerUser() {
 
 function logout() {
   token = null;
+  currentUser = null;
   localStorage.removeItem("token");
   document.getElementById("nav-user").textContent = "";
   document.getElementById("btn-logout").style.display = "none";
+  setAdminMode(false);
   showPage("auth");
 }
 
@@ -112,12 +115,154 @@ function logout() {
 async function loadDashboard() {
   try {
     const me = await apiFetch("/users/me");
-    document.getElementById("nav-user").textContent = me.username;
+    currentUser = me;
+    document.getElementById("nav-user").textContent = `${me.username} (${me.role})`;
     document.getElementById("btn-logout").style.display = "block";
+    setAdminMode(me.role === "admin");
     showPage("dashboard");
-    await fetchTasks();
+    if (me.role === "admin") {
+      await fetchAdminUsers();
+      await fetchAdminTasks();
+    } else {
+      await fetchTasks();
+    }
   } catch {
     logout();
+  }
+}
+
+function setAdminMode(isAdmin) {
+  const adminPanel   = document.getElementById("admin-panel");
+  const taskForm     = document.getElementById("user-task-form");
+  const filterRow    = document.getElementById("user-filter-row");
+  const taskList     = document.getElementById("task-list");
+  const loading      = document.getElementById("loading");
+  const title        = document.getElementById("dashboard-title");
+
+  if (adminPanel)  adminPanel.style.display  = isAdmin ? "block" : "none";
+  if (taskForm)    taskForm.style.display     = isAdmin ? "none"  : "block";
+  if (filterRow)   filterRow.style.display    = isAdmin ? "none"  : "flex";
+  if (taskList)    taskList.style.display     = isAdmin ? "none"  : "flex";
+  if (loading)     loading.style.display      = "none";
+  if (title)       title.textContent          = isAdmin ? "admin dashboard" : "my tasks";
+
+  if (!isAdmin) {
+    const usersEl = document.getElementById("admin-users");
+    const tasksEl = document.getElementById("admin-tasks");
+    const msgEl   = document.getElementById("admin-msg");
+    if (usersEl) usersEl.innerHTML = "";
+    if (tasksEl) tasksEl.innerHTML = "";
+    if (msgEl)   clearMsg(msgEl);
+  }
+}
+
+async function fetchAdminUsers() {
+  if (!currentUser || currentUser.role !== "admin") return;
+
+  const usersEl = document.getElementById("admin-users");
+  const msgEl = document.getElementById("admin-msg");
+
+  try {
+    const users = await apiFetch("/admin/users");
+    renderAdminUsers(users);
+    clearMsg(msgEl);
+  } catch (err) {
+    usersEl.innerHTML = `<div class="admin-item"><div class="admin-item-meta">${escHtml(err.message)}</div></div>`;
+    showMsg(msgEl, err.message);
+  }
+}
+
+async function fetchAdminTasks() {
+  if (!currentUser || currentUser.role !== "admin") return;
+
+  const tasksEl = document.getElementById("admin-tasks");
+  const msgEl = document.getElementById("admin-msg");
+
+  try {
+    const tasks = await apiFetch("/admin/tasks");
+    renderAdminTasks(tasks);
+    clearMsg(msgEl);
+  } catch (err) {
+    tasksEl.innerHTML = `<div class="admin-item"><div class="admin-item-meta">${escHtml(err.message)}</div></div>`;
+    showMsg(msgEl, err.message);
+  }
+}
+
+function renderAdminUsers(users) {
+  const usersEl = document.getElementById("admin-users");
+
+  if (!users.length) {
+    usersEl.innerHTML = `<div class="admin-item"><div class="admin-item-meta">no users found</div></div>`;
+    return;
+  }
+
+  usersEl.innerHTML = users.map(user => {
+    const userState = user.is_active ? "active" : "inactive";
+    const actions = [];
+
+    if (user.role !== "admin") {
+      actions.push(`<button class="btn btn-sm promote-user-btn" data-id="${user.id}">promote</button>`);
+    }
+
+    if (user.is_active && currentUser && user.id !== currentUser.id) {
+      actions.push(`<button class="btn btn-sm btn-danger deactivate-user-btn" data-id="${user.id}">deactivate</button>`);
+    }
+
+    return `
+      <div class="admin-item">
+        <div class="admin-item-title">${escHtml(user.username)}</div>
+        <div class="admin-item-meta">${escHtml(user.email)} · ${user.role} · ${userState}</div>
+        ${actions.length ? `<div class="admin-item-actions">${actions.join("")}</div>` : ""}
+      </div>
+    `;
+  }).join("");
+
+  usersEl.querySelectorAll(".promote-user-btn").forEach(btn => {
+    btn.addEventListener("click", () => promoteUser(btn.dataset.id));
+  });
+
+  usersEl.querySelectorAll(".deactivate-user-btn").forEach(btn => {
+    btn.addEventListener("click", () => deactivateUser(btn.dataset.id));
+  });
+}
+
+function renderAdminTasks(tasks) {
+  const tasksEl = document.getElementById("admin-tasks");
+
+  if (!tasks.length) {
+    tasksEl.innerHTML = `<div class="admin-item"><div class="admin-item-meta">no tasks found</div></div>`;
+    return;
+  }
+
+  tasksEl.innerHTML = tasks.map(task => `
+    <div class="admin-item">
+      <div class="admin-item-title">${escHtml(task.title)}</div>
+      <div class="admin-item-meta">owner: ${escHtml(task.owner_id)} · ${statusLabel(task.status)}</div>
+    </div>
+  `).join("");
+}
+
+async function promoteUser(userId) {
+  const msgEl = document.getElementById("admin-msg");
+
+  try {
+    await apiFetch(`/admin/users/${userId}/promote`, { method: "PATCH" });
+    showMsg(msgEl, "user promoted", "success");
+    await fetchAdminUsers();
+  } catch (err) {
+    showMsg(msgEl, err.message);
+  }
+}
+
+async function deactivateUser(userId) {
+  const msgEl = document.getElementById("admin-msg");
+
+  try {
+    await apiFetch(`/admin/users/${userId}/deactivate`, { method: "PATCH" });
+    showMsg(msgEl, "user deactivated", "success");
+    await fetchAdminUsers();
+  } catch (err) {
+    showMsg(msgEl, err.message);
   }
 }
 
@@ -272,6 +417,16 @@ function switchTab(tab) {
   document.getElementById("tab-register").style.display = tab === "register" ? "block" : "none";
 }
 
+function bindPasswordToggle(checkboxId, inputId) {
+  const checkbox = document.getElementById(checkboxId);
+  const input = document.getElementById(inputId);
+  if (!checkbox || !input) return;
+
+  checkbox.addEventListener("change", () => {
+    input.type = checkbox.checked ? "text" : "password";
+  });
+}
+
 
 // ── event wiring ──────────────────────────────────────────────────────────────
 
@@ -279,6 +434,10 @@ document.getElementById("btn-login").addEventListener("click", loginUser);
 document.getElementById("btn-register").addEventListener("click", registerUser);
 document.getElementById("btn-logout").addEventListener("click", logout);
 document.getElementById("btn-create-task").addEventListener("click", createTask);
+document.getElementById("btn-admin-refresh-users").addEventListener("click", fetchAdminUsers);
+document.getElementById("btn-admin-refresh-tasks").addEventListener("click", fetchAdminTasks);
+bindPasswordToggle("login-show-password", "login-password");
+bindPasswordToggle("reg-show-password", "reg-password");
 
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));
